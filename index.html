@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<body>
+HI
+<script src="/lib/poly-synth.js"></script>
+<script src="/asset/patches/diabolicalHorns.js"></script>
+<script src="/asset/patches/warble.js"></script>
+<script src="/asset/patches/tiny.js"></script>
+<script language="javascript">
+
+	try {
+
+		window.AudioContext = window.AudioContext||window.webkitAudioContext;
+    	audioContext = new AudioContext();
+
+
+    	var synth = new Synth.Synth(audioContext);
+
+    	synth.init(tiny, function() { 
+    		
+    		Synth.setupPlayer(synth);
+
+    		synth.outputNode.gain.value = 0.6;
+
+			synth.outputNode.connect(audioContext.destination);
+    	});
+
+
+	} catch(e) {
+    	console.log(e);
+  	}
+
+
+</script>
+</body>
+</html>
