@@ -6,6 +6,7 @@ HI
 <script src="/asset/patches/diabolicalHorns.js"></script>
 <script src="/asset/patches/warble.js"></script>
 <script src="/asset/patches/tiny.js"></script>
+<script src="/asset/patches/testPatches.js"></script>
 <script language="javascript">
 
 	try {
@@ -16,7 +17,7 @@ HI
 
     	var synth = new Synth.Synth(audioContext);
 
-    	synth.init(tiny, function() { 
+    	synth.init(testPatches.delayTest, function() { 
     		
     		Synth.setupPlayer(synth);
 

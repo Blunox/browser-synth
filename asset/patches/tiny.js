@@ -1,16 +1,15 @@
-
 var tiny = {
 
   isMono: false,
   numVoices: 8,
   portamentoPeriod: 0.25,
   portamentoRelative: 0.25,
-  oscillatorSet: {
-    oscillators: [
+  soundGeneratorSet: {
+    soundGenerators: [
       {
         type:"sine",
-        octave: 2,
-        volume: 0.9,
+        octave: 3,
+        volume: 0, // DOESN'T WORK!
         envelope: {
           attack: 0.5,
           envelopeShelf: 0.25,
@@ -30,7 +29,8 @@ var tiny = {
       },
       {
         type:"triangle",
-        octave: 1,
+        octave: 2,
+        volume: 0,
         envelope: {
           envelopeShelf: 0.25,
           attack: 0.5,

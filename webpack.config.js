@@ -27,6 +27,9 @@ var path = require('path');
      stats: {
          colors: true
      },
+     node: {
+        fs: "empty"
+     },
      devServer: {
         contentBase: '.',
         hot: true

@@ -1,8 +1,8 @@
-diabolicalHorns = {
+var diabolicalHorns = {
   isMono: true,
   portamentoRelative: 0.25,
   numVoices: 1,
-  impulseResponseBuffers: [
+  audioBuffers: [
 
     {
       id: 'hornA440',
@@ -10,8 +10,8 @@ diabolicalHorns = {
       chop: true
     }
   ],
-  oscillatorSet: {
-    oscillators: [
+  soundGeneratorSet: {
+    soundGenerators: [
       {
         type:"sample",
         src:"hornA440",
@@ -59,8 +59,7 @@ diabolicalHorns = {
         type:"delay",
         delayTime: 0.05,
         feedback: true,
-        feedbackGain: 0.8,
-        mix: 0.8
+        feedbackGain: 0.8
       }]
   }
 
