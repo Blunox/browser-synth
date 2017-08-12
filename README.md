@@ -1,92 +1,73 @@
 # browser-synth
-Browser-based, Web Audio API-enabled synthesizer
 
-## SoundGenerator Envelopes
+browser-synth is a library that lets you instantiate synthesizer modules that run in a web browser.  Synthesizer modules are implemented using the [Web Audio API] (https://webaudio.github.io/web-audio-api/).
 
-All envelope parameters are optional.  All time values are in seconds.
+Synth module instantiation is driven by javascript configuration objects called _patch specifications_.
 
-#### Parameter descriptions:
+browser-synth allows you to wire together poly- or mono-synth modules consisting of:
 
-threshold: Time value -- envelope will not be operative if note duration is less than threshold.
+* Oscillators
+* Sample players
+* Amplitude and frequency modulators
+* BiquadFilters
+* Delay units
+* Distortion units
+* Convolver units
 
-thresholdScaling: Time value -- all envelope time values (like attack) will be scaled down if duration is lower than this value.  If there is no threshold value present, then time values are scaled from full to 0 as duration approaches 0 -- otherwise, they are scaled from full to 0 as duration approaches threshold.
+browser-synth supports attack/delay/sustain/release envelopes on note playback and effects.  It also supports portamento on mono-synths.
 
-attack: Volume scales from 0 to full over this time value.
+## Usage
 
-decay: Volume decays to decayLevel (or 0.75 if not present) over this time value.
+### Browser
+```html
+<script src="/lib/browser-synth.min.js"></script>
+```
 
-release: Time value for note release.
+### Webpack project
+```javascript
+const BrowserSynth = require('browser-synth');
+```
 
-#### Example
+In Javascript:
 
-soundGenerators: [
-    {
-        type:"square",
-        octave: 0.5,
+```javascript
+window.AudioContext = window.AudioContext||window.webkitAudioContext;
+var audioContext = new AudioContext();
 
-        envelope: {
-            threshold: 0.15, 
-            thresholdScaling: 0.75,
-            attack: 0.65, // Time in seconds
-            decay: 0.3,
-            decayLevel: 0.75,
-            release: 0.65
-        }
-    }
-]
+var synth = new BrowserSynth.Synth(audioContext);
 
-## Effects
+// patchSpec is a javascript patch specification object
+synth.init(patchSpec, function() {
 
-### amplitudeLFO
+    synth.outputNode.gain.value = 0.6;
 
-#### Parameter descriptions:
+    synth.outputNode.connect(audioContext.destination);
+});
 
-shape: sine, square, triangle, sawtooth
+...
 
-frequency: Cycles per second.
+// Utility that sets up your synth to be playable 
+// from computer keyboard for easy testing.
+BrowserSynth.setupPlayer(synth);
 
-syncWithSongTempo: Overrides frequency setting -- syncs with synth's tempo setting instead.
+...
 
-beatMultiplier: With syncWithSongTempo, mulitplies number of oscillations per beat.
+/* 
+ * To play a note -- browser-synth initializes a frequency table 
+ * based on standard midi note numbers.
+ * Params are:  
+ *    1) frequency
+ *    2) String identifier letting BS track what key has been been pressed.
+ *       Can be any String as long as it's consistent in your application.
+ *    3) Time -- this call schedules a note half-a-second from now.
+ *    4) Volume -- this value will set a gain node associated with the note.
+ *                 There is no official limit to the value you can set, but
+ *                 for practical purposes, we consider 1.0 to be "full."        
+ */
+synth.start(BrowserSynth.frequencyTable[60], "c5", audioContext.currentTime + 0.5, 1.0);
 
-width: 1.0 is full.
-
-#### Example
-
-soundGenerators: [
-    {
-        type:"sine",
-        effects: [
-            {
-                type: "amplitudeLFO",
-                shape: "square",
-                //frequency: 5.0,
-                syncWithSongTempo: true,
-                beatMultiplier: 3,
-                width: 0.815
-            }
-        ]
-    }
-]
-
-### biquadFilter
-
-#### Parameter descriptions:
-
-See Web Audio API doc for details.
-
-#### Example
-
-soundGenerators: [
-    {
-        type:"square",
-        effects: [
-            {
-                type: "biquadFilter",
-                filterType: "lowpass",
-                frequency: 1099, // 0 to 22050
-                qualityFactor: 0.5
-            }
-        ]
-    }
-]
+/*
+ * This call schedules a stop event for the same note one second from now.
+ */
+synth.stop(BrowserSynth.frequencyTable[60], "c5", audioContext.currentTime + 1.0);
+```

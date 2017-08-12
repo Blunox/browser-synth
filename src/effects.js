@@ -125,7 +125,7 @@ const Distortion = function(audioContext, spec) {
 	this.outputNode = this.inputNode;
 
 	this.inputNode.curve = makeDistortionCurve(spec.amount);
-	this.inputNode.oversample = spec.oversample ? spec.oversampe : 'none';
+	this.inputNode.oversample = spec.oversample ? spec.oversample : 'none';
 }
 module.exports.Distortion = Distortion;
 
@@ -256,12 +256,6 @@ Envelope.prototype.setNoteValues = function(freq, key, startTime, volume, durati
 		);
 		currentTime += this.spec.decay;
 	}
-	if (this.spec.sustainLevel) {
-		this.wetGain.gain.cancelScheduledValues(currentTime);
-		this.wetGain.gain.setValueAtTime(this.spec.sustainLevel, currentTime);
-		this.dryGain.gain.cancelScheduledValues(currentTime);
-		this.dryGain.gain.setValueAtTime(1 - this.spec.sustainLevel, currentTime);
-	}
 }
 
 const DualMixLfoMixed = function(audioContext, effect, spec) {
@@ -273,8 +267,8 @@ const DualMixLfoMixed = function(audioContext, effect, spec) {
 
 	const effectsGain = audioContext.createGain();
 	const bypassGain = audioContext.createGain();
-	effectsGain.gain.value = spec.width;
-	bypassGain.gain.value = 1.0 - spec.width;
+	effectsGain.gain.value = spec.mix;
+	bypassGain.gain.value = 1.0 - spec.mix;
 
 	const wet = audioContext.createGain();
 	const dry = audioContext.createGain();
@@ -382,10 +376,16 @@ const Broken = function(audioContext, spec) {
 }
 module.exports.Broken = Broken;
 
-const Delay = function(audioContext, spec) {
+const Delay = function(audioContext, spec, tempo) {
 
 	const delay = audioContext.createDelay(spec.delayTime);
-	delay.delayTime.value = spec.delayTime;
+
+	if (spec.syncWithSongTempo) {
+		delay.delayTime.value = (tempo / 60) * (spec.beatMultiplier ? spec.beatMultiplier : 1.0);
+	} else {
+		delay.delayTime.value = spec.delayTime;
+	}
+	
 
 	const inputGain = audioContext.createGain();
 	const outputGain = audioContext.createGain();

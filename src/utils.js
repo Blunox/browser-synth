@@ -132,6 +132,79 @@ const kbMap2 = {
 
 const kbMap = kbMap1;
 
+function getKey(event) {
+
+    if (event.key === undefined) {
+
+        if (event.which == null) {
+            return String.fromCharCode(event.keyCode).toLowerCase();    // old IE
+        } else if (event.which != 0) {
+            return String.fromCharCode(event.which).toLowerCase();
+
+        } else {
+            return "";
+        }
+
+    } else {
+        return event.key;
+    }
+}
+
+function DistinctCaller(synth) {
+
+    this.synth = synth;
+    this.lastEvent = "";
+    this.lastKey = "";
+    this.eventForKey = {};
+}
+DistinctCaller.prototype.handleEvent = function(event, key) {
+
+    if ((event != this.lastEvent) || (key != this.lastKey)) {
+
+        if (this.eventForKey[key] != event) {
+
+            //console.log(`Native: distinct event ${event} ${key}`);
+
+            const val = kbMap[key];
+            if (val != null) {
+
+                const noteNum = val[0] + (12 * (val[1] + 3));
+
+                if (event === "keypress") {
+
+                    synth.start(frequencyTable[noteNum], key, 0);
+
+                } else if (event === "keyup") {
+
+                    synth.stop(frequencyTable[noteNum], key, 0);
+                }
+            }
+            this.lastEvent = event;
+            this.lastKey = key;
+            this.eventForKey[key] = event;
+        }
+    }
+}
+
+const setupPlayerManual = function (synth) {
+
+    var distinctCaller = new DistinctCaller(synth);
+
+    document.addEventListener("keypress", function(event) {
+
+        const key = getKey(event);
+        //console.log("Got key press: " + key);
+        distinctCaller.handleEvent("keypress", key);
+    });
+    document.addEventListener("keyup", function(event) {
+
+        const key = getKey(event);
+        //console.log("Got keyup: " + key);
+        distinctCaller.handleEvent("keyup", key);
+    })
+}
+
+
 const setupPlayer = function (synth) {
 
 
@@ -156,6 +229,8 @@ const setupPlayer = function (synth) {
         .distinctUntilChanged((now, past) => now.type === past.type)
         .subscribe(event => {
 
+           // console.log(`distinct event ${event.type} ${event.key}`);
+
             const val = kbMap[event.key];
             if (val != null) {
 
@@ -177,6 +252,13 @@ const setupPlayer = function (synth) {
 }
 
 module.exports.setupPlayer = setupPlayer;
+
+
+module.exports.getFrequencyFromCents = function(startFreq, cents) {
+
+
+    return startFreq * Math.pow(2, cents/1200)
+}
 
 
 // Webaudio API's implementation is buggy and doesn't work on IE

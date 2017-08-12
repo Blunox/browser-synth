@@ -1,4 +1,5 @@
 var Effects = require("./effects");
+var Utils = require("./utils");
 
 const getCents = function(f1, f2) {
 
@@ -32,6 +33,11 @@ const SamplePlayer = function(audioContext, audioBuffers, spec) {
 
 module.exports = SamplePlayer;
 
+SamplePlayer.prototype.getAdjustedFreq = function(freq) {
+
+	return this.spec.detune ? Utils.getFrequencyFromCents(freq, this.spec.detune) : freq;
+}
+
 SamplePlayer.prototype.start = function(freq, key, startTime, volume, duration) {
 
 	for (var effect of this.setNoteValues) {
@@ -42,8 +48,7 @@ SamplePlayer.prototype.start = function(freq, key, startTime, volume, duration) 
 
 	this.osc = this.audioContext.createBufferSource();
 	this.osc.buffer = this.audioBuffers[this.spec.src];
-	//this.osc.detune.value = getCents(this.spec.baseFrequency, freq); // Detune doesn't work in Safari
-	this.osc.playbackRate.value = getPlaybackRate(this.spec.baseFrequency, freq);
+	this.osc.playbackRate.value = getPlaybackRate(this.spec.baseFrequency, this.getAdjustedFreq(freq));
 	this.osc.loop = true;
 	if (this.spec.loopStart) {
 		this.osc.loopStart = this.spec.loopStart;
@@ -53,8 +58,6 @@ SamplePlayer.prototype.start = function(freq, key, startTime, volume, duration) 
 
 	}
 	this.osc.start(startTime);
-	
-	this.freq = freq;
 
 	this.toStop = [];
 
@@ -73,8 +76,7 @@ SamplePlayer.prototype.start = function(freq, key, startTime, volume, duration) 
 }
 SamplePlayer.prototype.setFrequency = function(freq) {
 
-	//this.osc.detune.value = getCents(this.spec.baseFrequency, freq);
-	this.osc.playbackRate.value = getPlaybackRate(this.spec.baseFrequency, freq);
+	this.osc.playbackRate.value = getPlaybackRate(this.spec.baseFrequency, this.getAdjustedFreq(freq));
 }
 SamplePlayer.prototype.stop = function(time, duration) {
 
@@ -90,7 +92,7 @@ SamplePlayer.prototype.stop = function(time, duration) {
 	}
 }
 SamplePlayer.prototype.addEffect = function(effect) {
-	
+
 	this.outputNode.connect(effect.inputNode);
 	this.outputNode = effect.outputNode;
 }

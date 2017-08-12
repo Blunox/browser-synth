@@ -1,4 +1,5 @@
 var Effects = require("./effects");
+var Utils = require("./utils");
 
 const Oscillator = function(audioContext, spec) {
 
@@ -31,7 +32,16 @@ Oscillator.prototype.start = function(freq, key, startTime, volume, duration) {
 	this.osc = this.audioContext.createOscillator();
 	this.osc.type = this.spec.type ? this.spec.type : "sine";
 
-	this.osc.frequency.value = this.spec.octave ? freq * this.spec.octave: freq;
+ 	if (this.spec.detune) {
+
+ 		const myFreq = this.spec.octave ? freq * this.spec.octave: freq;
+ 		const freqAdj = Utils.getFrequencyFromCents(myFreq, this.spec.detune);
+
+ 		this.osc.frequency.value = freqAdj;//myFreq + freqAdj;
+ 	} else {
+ 		this.osc.frequency.value = this.spec.octave ? freq * this.spec.octave: freq;
+ 	}
+	
 
 	this.osc.start(startTime);
 	this.freq = freq;
@@ -49,15 +59,24 @@ Oscillator.prototype.start = function(freq, key, startTime, volume, duration) {
 	this.targetNode.gain.value = volume != null ? volume : 1.0;
 
 	if (this.spec.frequencyLFO) {
-		const freqLFO = new FrequencyLFO (this.audioContext, this.spec.frequencyLFO, 120, this.osc);
+		const freqLFO = new Effects.FrequencyLFO (this.audioContext, this.spec.frequencyLFO, 120, this.osc);
 		this.toStop.concat(freqLFO.toStop);
 	}
 
 	
 }
 Oscillator.prototype.setFrequency = function(freq) {
-	this.osc.frequency.value = this.spec.octave ? freq * this.spec.octave: freq;
-	this.freq = freq;
+	
+	if (this.spec.detune) {
+
+ 		const myFreq = this.spec.octave ? freq * this.spec.octave: freq;
+ 		const freqAdj = Utils.getFrequencyFromCents(myFreq, this.spec.detune);
+
+ 		this.osc.frequency.value = freqAdj;
+ 	} else {
+ 		this.osc.frequency.value = this.spec.octave ? freq * this.spec.octave: freq;
+ 	}
+
 }
 Oscillator.prototype.stop = function(time, duration) {
 

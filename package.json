@@ -1,11 +1,12 @@
 {
-  "name": "synth-test",
+  "name": "browser-synth",
   "version": "1.0.0",
   "description": "Web Audio API enabled synth module",
   "main": "src/poly-synth.js",
   "scripts": {
     "test": "mocha --compilers js:babel-core/register --recursive ",
-    "webpack": "webpack"
+    "dev": "WEBPACK_ENV=dev webpack --progress --colors",
+    "build": "WEBPACK_ENV=build webpack --progress --colors"
   },
   "author": "David MacLeod",
   "license": "ISC",

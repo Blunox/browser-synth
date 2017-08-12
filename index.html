@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
 <body>
-HI
-<script src="/lib/poly-synth.js"></script>
+<h1>Browser Synth Test</h1>
+<h2>Press keys to test synth</h2>
+<script src="/lib/browser-synth.min.js"></script>
 <script src="/asset/patches/diabolicalHorns.js"></script>
 <script src="/asset/patches/warble.js"></script>
 <script src="/asset/patches/tiny.js"></script>
@@ -12,18 +13,18 @@ HI
 	try {
 
 		window.AudioContext = window.AudioContext||window.webkitAudioContext;
-    	audioContext = new AudioContext();
+    	var audioContext = new AudioContext();
 
+    	var synth = new BrowserSynth.Synth(audioContext);
 
-    	var synth = new Synth.Synth(audioContext);
-
-    	synth.init(testPatches.delayTest, function() { 
+    	synth.init(diabolicalHorns, function() { 
     		
-    		Synth.setupPlayer(synth);
+    		BrowserSynth.setupPlayer(synth);
 
     		synth.outputNode.gain.value = 0.6;
 
 			synth.outputNode.connect(audioContext.destination);
+
     	});
 
 

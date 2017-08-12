@@ -1,4 +1,3 @@
-
 var Rxjs = require('rxjs');
 var Oscillator = require('./oscillator');
 var SamplePlayer = require('./samplePlayer');
@@ -7,6 +6,8 @@ var Utils = require("./utils");
 
 
 module.exports.setupPlayer = Utils.setupPlayer;
+module.exports.frequencyTable = Utils.frequencyTable;
+
 
 
 const Voice = function(freq) {
@@ -136,7 +137,7 @@ Synth.prototype.loadAudioBuffers = function(callback) {
 	} else if (this.patch.audioBuffers == null) {
 
 		callback();
-	} else {
+	} else {		
 
 		Rxjs.Observable.from(this.patch.audioBuffers)
 		.map(spec => {
@@ -172,6 +173,7 @@ Synth.prototype.loadAudioBuffers = function(callback) {
 		.concatAll()
 		.last()
 		.subscribe(x => callback(), err => console.log(err));
+		
 	}
 }
 Synth.prototype.start = function(freq, key, startTime, volume) {
@@ -198,10 +200,20 @@ Synth.prototype.start = function(freq, key, startTime, volume) {
 Synth.prototype.applyRelativePortamento = function(voice, key, freq, noteStart) {
 
 	const startFreq = voice.freq;
-	const freqDiff = freq - voice.freq;
-	const freqRatio = freq / voice.freq;
+	const freqDiff = freq - startFreq;
+	const freqRatio = freq / startFreq;
 
-	const period = freqRatio * (this.patch.portamentoRelative / 2.0)
+	//console.log(`startFred ${ startFreq }, targetFreq ${ freq }, freqDiff ${ freqDiff }, freqRatio ${ freqRatio }`)
+
+	var period;
+	if (freqDiff > 0) {
+		period = (freqRatio - 1.0) * (this.patch.portamentoRelative)
+	} else {
+		//period = freqRatio * (1.0 / this.patch.portamentoRelative)
+		period = ((1.0/freqRatio) - 1.0) * (this.patch.portamentoRelative)
+	}
+	
+	//console.log(`period: ${ period }`)
 
 	const startTime = this.audioContext.currentTime + noteStart;
 	if (this.portamentoExecSubscription) {
@@ -265,7 +277,7 @@ Synth.prototype.startMono = function(freq, key, startTime, volume, duration) {
 
 		this.startPoly(freq, "all", startTime, volume, duration)
 
-	} else if ((this.patch.portamentoShelf != null) && (duration != null) && (duration < this.patch.portamentoShelf)) { 
+	} else if ((this.patch.portamentoThreshold != null) && (duration != null) && (duration < this.patch.portamentoThreshold)) { 
 
 		this.stopPoly(freq, "all", startTime, volume, duration)
 		this.startPoly(freq, "all", startTime, volume, duration)
@@ -284,7 +296,7 @@ Synth.prototype.startMono = function(freq, key, startTime, volume, duration) {
 			// Use a constant time no matter the distance
 			this.applyConstantPortamento(voice, key, freq, startTime);
 		} else {
-			this.running[key] = voice;
+
 			voice.setFrequency(freq);
 			voice.key = key;
 		}
@@ -295,11 +307,17 @@ Synth.prototype.startPoly = function(freq, key, startTime, volume, duration) {
 
 	if (this.running[key] != null) {
 		this.running[key].stop(startTime == null ? 0 : startTime);
-		delete this.running[key];art
+		delete this.running[key];
 
 	}
 
 	const voice = this.voices.getVoice();
+
+	if (this.running[voice.key] != null) {
+		this.running[voice.key].stop(startTime == null ? 0 : startTime);
+		delete this.running[voice.key];
+	}
+
 	this.running[key] = voice;
 	voice.start(freq, key, startTime, volume, duration);
 
@@ -362,6 +380,60 @@ Synth.prototype.createVoice = function() {
 
 	var output = gain;
 
+
+	if (this.patch.soundGenerators) {
+			for (var spec of this.patch.soundGenerators) {
+
+				var soundGen;
+
+				if (spec.type === "sample") {
+
+					soundGen = new SamplePlayer(this.audioContext, this.audioBuffers ,spec);
+				} else {
+
+					soundGen = new Oscillator(this.audioContext, spec);
+				}
+				
+				if (spec.effects) {
+
+					spec.effects.map(effectSpec => {
+
+						const effect = this.createEffect(effectSpec);
+
+						if (effect != null) {
+							soundGen.addEffect(effect);
+
+							if (effect.setNoteValues != null) {
+								soundGen.setNoteValues.push(effect);
+							}
+						}
+
+
+					});
+				}
+
+				soundGen.outputNode.connect(gain);
+				voice.addSoundGenerator(soundGen);
+			}
+		}
+		
+		if (this.patch.effects) {
+			for (var spec of this.patch.effects) {
+				
+				const effect = this.createEffect(spec);
+
+				if (effect != null) {
+					output.connect(effect.inputNode);
+					output = effect.outputNode;
+
+					if (effect.setNoteValues != null) {
+						voice.setNoteValues.push(effect);
+					}
+				}
+			}
+		}
+
+    /*
 	if (this.patch.soundGeneratorSet) {
 
 		if (this.patch.soundGeneratorSet.soundGenerators) {
@@ -400,8 +472,8 @@ Synth.prototype.createVoice = function() {
 			}
 		}
 		
-		if (this.patch.soundGeneratorSet.output) {
-			for (var spec of this.patch.soundGeneratorSet.output) {
+		if (this.patch.effects) {
+			for (var spec of this.patch.effects) {
 				
 				const effect = this.createEffect(spec);
 
@@ -416,6 +488,7 @@ Synth.prototype.createVoice = function() {
 			}
 		}
 	}
+	*/
 
 	voice.outputNode = output;
 	return voice;
@@ -429,21 +502,18 @@ Synth.prototype.createEffect = function(spec) {
 		effect = envelope;
 	}
 
-	if (effect != null && spec.frequencyLFO) {
-		const fLFO = new Effects.FrequencyLFO(this.audioContext, spec.frequencyLFO, 
-			this.getSongTempo(), effect);
-		//effect = fLFO;
-	}
-
-	if (effect != null && spec.mixLFO != null && spec.mixLFO.width) {
+	if (effect != null && spec.mixLFO != null && (spec.mixLFO.mix != null)) {
 
 		return new Effects.DualMixLfoMixed(this.audioContext, effect, spec.mixLFO);
+
 	} else if (effect != null && spec.mixLFO != null) {
 
 		return new Effects.DualMixLFO(this.audioContext, effect, spec.mixLFO);
+
 	} else if (effect != null && spec.mix != null) {
 
 		return new Effects.DualMixer(this.audioContext, effect, spec)
+
 	} else {
 
 		return effect;
@@ -458,7 +528,7 @@ Synth.prototype.createEffectInternal = function(spec) {
 		case "convolver":
 			return new Effects.Convolver(this.audioContext, this.audioBuffers, spec);
 		case "delay":
-			return new Effects.Delay(this.audioContext, spec);
+			return new Effects.Delay(this.audioContext, spec, this.getSongTempo());
 		case "amplitudeLFO":
 			return new Effects.AmplitudeLFO(this.audioContext, spec, this.getSongTempo());
 		case "distortion":
