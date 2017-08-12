@@ -94,34 +94,6 @@ Synth.prototype.initVoices = function(callback) {
 	
 	callback();
 }
-Synth.prototype.chopBuffer = function(buff) {
-
-	const temps = [new Float32Array(buff.length), new Float32Array(buff.length)];
-	const newTemps = [new Float32Array(buff.length), new Float32Array(buff.length)];
-
-	var chan;
-	for (chan = 0; chan < buff.numberOfChannels; chan++) {
-
-		buff.copyFromChannel(temps[chan], chan)
-		buff.copyFromChannel(newTemps[chan], chan)
-	}
-
-	for (var i = 0; i < 50; i++) {
-		const size = Math.floor(Math.random() * buff.length / 5);
-		const loc1 = Math.floor(Math.random() * buff.length);
-		const loc2 = Math.floor(Math.random() * buff.length);
-		for (var chan = 0; chan < buff.numberOfChannels; chan++) {
-			var slice = temps[chan].slice(loc1, size)
-			newTemps[chan].set(slice, loc2);
-		}
-	}
-	for (chan = 0; chan < buff.numberOfChannels; chan++) {
-
-		buff.copyToChannel(newTemps[chan], chan)
-	}
-
-	return buff;
-}
 Synth.prototype.manuallySetAudioBuffers = function(audioBuffers) {
 
 	this.audioBuffersSet = audioBuffers;
@@ -148,7 +120,6 @@ Synth.prototype.loadAudioBuffers = function(callback) {
 
 			  	const audioContext = this.audioContext;
 			  	const audioBuffers = this.audioBuffers;
-			  	const chop = this.chopBuffer;
 			  	
 			  	return Rxjs.Observable.fromPromise(
 			  		new Promise(
@@ -382,113 +353,56 @@ Synth.prototype.createVoice = function() {
 
 
 	if (this.patch.soundGenerators) {
-			for (var spec of this.patch.soundGenerators) {
+		for (var spec of this.patch.soundGenerators) {
 
-				var soundGen;
+			var soundGen;
 
-				if (spec.type === "sample") {
+			if (spec.type === "sample") {
 
-					soundGen = new SamplePlayer(this.audioContext, this.audioBuffers ,spec);
-				} else {
+				soundGen = new SamplePlayer(this.audioContext, this.audioBuffers ,spec);
+			} else {
 
-					soundGen = new Oscillator(this.audioContext, spec);
-				}
-				
-				if (spec.effects) {
+				soundGen = new Oscillator(this.audioContext, spec);
+			}
+			
+			if (spec.effects) {
 
-					spec.effects.map(effectSpec => {
+				spec.effects.map(effectSpec => {
 
-						const effect = this.createEffect(effectSpec);
+					const effect = this.createEffect(effectSpec);
 
-						if (effect != null) {
-							soundGen.addEffect(effect);
+					if (effect != null) {
+						soundGen.addEffect(effect);
 
-							if (effect.setNoteValues != null) {
-								soundGen.setNoteValues.push(effect);
-							}
+						if (effect.setNoteValues != null) {
+							soundGen.setNoteValues.push(effect);
 						}
-
-
-					});
-				}
-
-				soundGen.outputNode.connect(gain);
-				voice.addSoundGenerator(soundGen);
-			}
-		}
-		
-		if (this.patch.effects) {
-			for (var spec of this.patch.effects) {
-				
-				const effect = this.createEffect(spec);
-
-				if (effect != null) {
-					output.connect(effect.inputNode);
-					output = effect.outputNode;
-
-					if (effect.setNoteValues != null) {
-						voice.setNoteValues.push(effect);
 					}
-				}
+
+
+				});
 			}
+
+			soundGen.outputNode.connect(gain);
+			voice.addSoundGenerator(soundGen);
 		}
+	}
+	
+	if (this.patch.effects) {
+		for (var spec of this.patch.effects) {
+			
+			const effect = this.createEffect(spec);
 
-    /*
-	if (this.patch.soundGeneratorSet) {
+			if (effect != null) {
+				output.connect(effect.inputNode);
+				output = effect.outputNode;
 
-		if (this.patch.soundGeneratorSet.soundGenerators) {
-			for (var spec of this.patch.soundGeneratorSet.soundGenerators) {
-
-				var soundGen;
-
-				if (spec.type === "sample") {
-
-					soundGen = new SamplePlayer(this.audioContext, this.audioBuffers ,spec);
-				} else {
-
-					soundGen = new Oscillator(this.audioContext, spec);
-				}
-				
-				if (spec.effects) {
-
-					spec.effects.map(effectSpec => {
-
-						const effect = this.createEffect(effectSpec);
-
-						if (effect != null) {
-							soundGen.addEffect(effect);
-
-							if (effect.setNoteValues != null) {
-								soundGen.setNoteValues.push(effect);
-							}
-						}
-
-
-					});
-				}
-
-				soundGen.outputNode.connect(gain);
-				voice.addSoundGenerator(soundGen);
-			}
-		}
-		
-		if (this.patch.effects) {
-			for (var spec of this.patch.effects) {
-				
-				const effect = this.createEffect(spec);
-
-				if (effect != null) {
-					output.connect(effect.inputNode);
-					output = effect.outputNode;
-
-					if (effect.setNoteValues != null) {
-						voice.setNoteValues.push(effect);
-					}
+				if (effect.setNoteValues != null) {
+					voice.setNoteValues.push(effect);
 				}
 			}
 		}
 	}
-	*/
 
 	voice.outputNode = output;
 	return voice;

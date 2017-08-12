@@ -2,7 +2,7 @@
 
 browser-synth is a library that lets you instantiate synthesizer modules that run in a web browser.  Synthesizer modules are implemented using the [Web Audio API] (https://webaudio.github.io/web-audio-api/).
 
-Synth module instantiation is driven by javascript configuration objects called _patch specifications_.
+Synth module instantiation is driven by javascript configuration objects called _patch specifications_. See documentation (https://github.com/blunox/browser-synth/wiki/Documentation).
 
 browser-synth allows you to wire together poly- or mono-synth modules consisting of:
 
@@ -70,4 +70,14 @@ synth.start(BrowserSynth.frequencyTable[60], "c5", audioContext.currentTime + 0.
  * This call schedules a stop event for the same note one second from now.
  */
 synth.stop(BrowserSynth.frequencyTable[60], "c5", audioContext.currentTime + 1.0);
+```
+
+## To build
+```
+>npm run-script build
+```
+
+## To test
+```
+>npm test
 ```
