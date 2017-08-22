@@ -5,15 +5,15 @@ var diabolicalHorns = {
   numVoices: 1,
   audioBuffers: [
     {
-      id: 'hornA440',
-      url: 'asset/sound/hornA440.wav',
+      id: 'hornSample',
+      url: 'asset/sound/hornSample.wav',
       chop: true
     }
   ],
   soundGenerators: [
     {
       type:"sample",
-      src:"hornA440",
+      src:"hornSample",
       baseFrequency:184.98,
       loopStart: 0.147,
       loopEnd: 2.3,
